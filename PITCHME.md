@@ -8,7 +8,7 @@ go build
 
 **What Now?** <!-- .element: class="fragment" -->
 - The binary is now sitting on you laptop/CI server. How does anyone else get it? <!-- .element: class="fragment" -->
-- What about users who use a different OS or Architecture <!-- .element: class="fragment" -->
+- What about users who use a different OS or Architecture? <!-- .element: class="fragment" -->
 
 ---
 
@@ -38,7 +38,7 @@ This is how we do it at iZettle, this works for us but might not work for you.
 * We use [mitchellh/gox](https://github.com/mitchellh/gox) to run this in parallel
 * Upload all the compiled artifacts to github releases page
 * We use [tcnksm/ghr](https://github.com/tcnksm/ghr) which also does it in parallel
-* We have upload an install script that can be used to ``curl ... | bash``
+* We also upload an install script to help with installation
 
 +++
 
@@ -47,7 +47,8 @@ This is how we do it at iZettle, this works for us but might not work for you.
 ``` bash
 gox -osarch="linux/amd64 darwin/amd64"\
     -output="bin/{{.Dir}}_{{.OS}}_{{.Arch}}"
-ghr -u example "${TAG}" bin/
+
+ghr -u example -r awesome_app "${TAG}" bin/
 ```
 
 ---
@@ -55,8 +56,8 @@ ghr -u example "${TAG}" bin/
 ## Services
 
 * Compile a static binary for Linux
-* Build a Docker image and push to the Registry <!-- .element: class="fragment" -->
-* Update the Kubernetes config file which triggers the deploy to the Kubernetes Cluster <!-- .element: class="fragment" -->
+* Build a Docker image and push to the Registry
+* Update the Kubernetes config file which triggers the deploy to the Kubernetes Cluster
 
 +++
 
@@ -76,6 +77,7 @@ CMD ["awesome_app"]
 
 ```bash
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o awesome_app
+
 docker build -t ${DOCKER_TAG} .
 ```
 
@@ -85,15 +87,15 @@ docker build -t ${DOCKER_TAG} .
 
 **Not always static**
 * Static isn't always static. If you compile on Linux for Linux it will link to libc.
-* Use `CGO_ENABLED=0` to force static compilation <!-- .element: class="fragment" -->
+* Use `CGO_ENABLED=0` to force static compilation
 
 ---
 
 ## Tips and Gotchas
 
 **Package your services**
-* If you deploy using Docker use an Orchestrator (Kubernetes is Awesome)
-* If you don’t use Docker use native packages (rpm, deb, etc)
+* There is more to the service than just the binary
+* Use native packages (rpm, deb, etc) or docker to package the whole service
 
 +++
 
@@ -104,10 +106,21 @@ this really simple.
 
 ```bash
 fpm -s dir -t deb -n awesome_app \
-    --config-files /etc/awesome_app/awesome.conf -v ${TAG} \
+    --config-files /etc/awesome_app/awesome.conf \
+    -v ${TAG} \
     awesome_app=/usr/bin \
     awesome.conf=/etc/awesome_app
 ```
+
+---
+
+## Tips and Gotchas
+
+
+**Script your builds**
+
+* Building and deploying the app takes multiple steps with a lot of arguments for each step
+* Write some simple build scripts (`shell`, `make`, etc) to make you release process a single script
 
 ---
 
